@@ -4,6 +4,7 @@ import { register, login } from "../controllers/authController";
 
 const router = Router();
 
+// authController
 router.post('/register', register);
 router.post('/login', login);
 

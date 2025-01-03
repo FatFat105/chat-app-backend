@@ -10,9 +10,16 @@ export const fetchAllConversationsByUserId = async (req: Request, res: Response)
     
     try {
         const result = await pool.query(
-            `SELECT c.id AS conversation_id, u.username AS participant_name, m.content AS last_message, m.created_at AS last_message_time
+            `SELECT c.id AS conversation_id,
+            CASE
+                WHEN u1.id = $1 THEN u2.username
+                ELSE u1.username
+            END AS participant_name,
+            m.content AS last_message, 
+            m.created_at AS last_message_time
             FROM conversations c 
-            JOIN users u ON ((u.id = c.participant_one OR u.id = c.participant_two) AND u.id != $1)
+            JOIN users u1 ON u1.id = c.participant_one
+            JOIN users u2 ON u2.id = c.participant_two
             LEFT JOIN LATERAL (
                 SELECT content, created_at
                 FROM messages
@@ -20,7 +27,7 @@ export const fetchAllConversationsByUserId = async (req: Request, res: Response)
                 ORDER BY created_at DESC
                 LIMIT 1
             ) m ON true
-            Where c.participant_one = $1 OR c.participant_two = $1
+            WHERE c.participant_one = $1 OR c.participant_two = $1
             ORDER BY m.created_at DESC
             `,
             [userId]
